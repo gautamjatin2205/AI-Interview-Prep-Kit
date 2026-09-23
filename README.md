@@ -2,12 +2,12 @@
 
 > **A full-stack web application that turns any Job Description and Company Website URL into a structured, highly personalized interview preparation kit.**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-interview--prep--kit--delta.vercel.app-brightgreen?style=for-the-badge&logo=vercel)](https://interview-prep-kit-delta.vercel.app/)
+[![Live Demo](https://interview-prep-kit-git-main-jatin-gautams-projects.vercel.app/register)](https://interview-prep-kit-git-main-jatin-gautams-projects.vercel.app/register/)
 [![GitHub Repo](https://img.shields.io/badge/GitHub-AI--Interview--Prep--Kit-blue?style=for-the-badge&logo=github)](https://github.com/gautamjatin2205/AI-Interview-Prep-Kit)
 
 | | Link |
 |---|---|
-| 🌐 **Live App** | [https://interview-prep-kit-delta.vercel.app/](https://interview-prep-kit-delta.vercel.app/) |
+| 🌐 **Live App** | [https://interview-prep-kit-git-main-jatin-gautams-projects.vercel.app/register](https://interview-prep-kit-git-main-jatin-gautams-projects.vercel.app/register) |
 | 📦 **GitHub Repository** | [https://github.com/gautamjatin2205/AI-Interview-Prep-Kit](https://github.com/gautamjatin2205/AI-Interview-Prep-Kit) |
 | 🗄️ **Database** | MongoDB Atlas (Cluster0) |
 
@@ -221,7 +221,7 @@ The system does not rely on a fixed list of paths. The autonomous crawler perfor
 The application is deployed on **Vercel** as a monorepo (Next.js handles both frontend and backend via API routes — no separate backend deployment needed).
 
 ### Live URL
-🌐 **[https://interview-prep-kit-delta.vercel.app/](https://interview-prep-kit-delta.vercel.app/)**
+🌐 **[https://interview-prep-kit-git-main-jatin-gautams-projects.vercel.app/register](https://interview-prep-kit-git-main-jatin-gautams-projects.vercel.app/register)**
 
 ### Deploy Your Own Instance
 
