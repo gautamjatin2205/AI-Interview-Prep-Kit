@@ -36,7 +36,8 @@ export async function POST(req) {
 
     // Use MongoDB _id when available, fallback to custom id field
     const userId = user._id ? user._id.toString() : (user.id || lowerEmail);
-    const token = jwt.sign({ userId, email: lowerEmail, name: user.name }, JWT_SECRET, { expiresIn: '7d' });
+    // Session cookie: no maxAge/expires → browser deletes it when all tabs are closed
+    const token = jwt.sign({ userId, email: lowerEmail, name: user.name }, JWT_SECRET, { expiresIn: '24h' });
 
     const response = NextResponse.json({
       success: true,
@@ -48,7 +49,7 @@ export async function POST(req) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60,
+      // No maxAge or expires = session cookie (deleted when browser/tab is closed)
       path: '/'
     });
 
