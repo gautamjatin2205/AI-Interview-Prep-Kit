@@ -1,0 +1,305 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-09-23T04:21:45.830Z",
+  "kits": [
+    {
+      "id": "case-01",
+      "status": "ok",
+      "kit": {
+        "source": {
+          "company": "PostHog – We make your product self",
+          "company_url": "https://posthog.com",
+          "role": "Senior Backend Engineer",
+          "location": "Remote / On-site",
+          "jd_chars": 293,
+          "researched_at": "2026-09-23T04:21:45.832Z",
+          "pages_used": [
+            "https://posthog.com",
+            "https://posthog.com/careers"
+          ]
+        },
+        "company_brief": {
+          "summary": "PostHog – We make your product self operates at posthog.com. PostHog automatically diagnoses problems, fixes bugs, and generates pull requests – all without you having to prompt it.",
+          "what_they_do": "PostHog automatically diagnoses problems, fixes bugs, and generates pull requests – all without you having to prompt it.",
+          "sources": [
+            "https://posthog.com",
+            "https://posthog.com/careers"
+          ]
+        },
+        "role": {
+          "title": "Senior Backend Engineer",
+          "seniority": "Mid-Senior",
+          "responsibilities": [
+            "Deliver reliable, scalable, and high-performance production software",
+            "Participate in architecture design, code reviews, and cross-team collaboration"
+          ],
+          "requirements": [
+            {
+              "id": "r1",
+              "text": "Senior Backend Engineer",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r2",
+              "text": "We are looking for a Senior Node.js Engineer with 5+ years of experience building microservices, REST APIs, and working with Mongo...",
+              "kind": "technical",
+              "priority": "nice"
+            }
+          ]
+        },
+        "questions": [
+          {
+            "id": "q1",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "technical",
+            "prompt": "Explain your hands-on experience with: \"Senior Backend Engineer\". What architectural decisions, performance trade-offs, and failure modes have you encountered?",
+            "answer_outline": "1. Core technical principles of Senior Backend Engineer.\n2. Real-world implementation details and challenges.\n3. Testing, debugging, and production considerations.",
+            "difficulty": 2
+          },
+          {
+            "id": "q2",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "system-design",
+            "prompt": "How would you design a scalable production service that incorporates Senior Backend Engineer?",
+            "answer_outline": "1. High-level component architecture.\n2. Data access patterns and storage schema.\n3. Scalability, caching, and resiliency strategies.",
+            "difficulty": 3
+          },
+          {
+            "id": "q3",
+            "requirement_ids": [
+              "r2"
+            ],
+            "category": "technical",
+            "prompt": "Explain your hands-on experience with: \"We are looking for a Senior Node.js Engineer with 5+ years of experience building microservices, REST APIs, and working with Mongo...\". What architectural decisions, performance trade-offs, and failure modes have you encountered?",
+            "answer_outline": "1. Core technical principles of We are looking for a Senior Node.js Engineer with 5+ years of experience building microservices, REST APIs, and working with Mongo....\n2. Real-world implementation details and challenges.\n3. Testing, debugging, and production considerations.",
+            "difficulty": 2
+          },
+          {
+            "id": "q4",
+            "requirement_ids": [
+              "r2"
+            ],
+            "category": "system-design",
+            "prompt": "How would you design a scalable production service that incorporates We are looking for a Senior Node.js Engineer with 5+ years of experience building microservices, REST APIs, and working with Mongo...?",
+            "answer_outline": "1. High-level component architecture.\n2. Data access patterns and storage schema.\n3. Scalability, caching, and resiliency strategies.",
+            "difficulty": 3
+          }
+        ],
+        "flashcards": [
+          {
+            "id": "f1",
+            "front": "Core Concept: Senior Backend Engineer",
+            "back": "Key preparation outline for TECHNICAL evaluation:\n1. Direct alignment with requirement.\n2. Measurable implementation experience.\n3. Common interview pitfalls.",
+            "requirement_ids": [
+              "r1"
+            ]
+          },
+          {
+            "id": "f2",
+            "front": "Core Concept: We are looking for a Senior Node.js Engineer with 5+ years o",
+            "back": "Key preparation outline for TECHNICAL evaluation:\n1. Direct alignment with requirement.\n2. Measurable implementation experience.\n3. Common interview pitfalls.",
+            "requirement_ids": [
+              "r2"
+            ]
+          }
+        ],
+        "schedule": {
+          "days_available": 5,
+          "days": [
+            {
+              "day": 1,
+              "focus": "SYSTEM-DESIGN & Priority Mastery",
+              "question_ids": [
+                "q2"
+              ],
+              "minutes": 60
+            },
+            {
+              "day": 2,
+              "focus": "TECHNICAL & Priority Mastery",
+              "question_ids": [
+                "q1"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 3,
+              "focus": "SYSTEM-DESIGN & Priority Mastery",
+              "question_ids": [
+                "q4"
+              ],
+              "minutes": 60
+            },
+            {
+              "day": 4,
+              "focus": "TECHNICAL & Priority Mastery",
+              "question_ids": [
+                "q3"
+              ],
+              "minutes": 40
+            },
+            {
+              "day": 5,
+              "focus": "Day 5 Revision & Practice Polish",
+              "question_ids": [],
+              "minutes": 45
+            }
+          ]
+        },
+        "coverage": {
+          "uncovered_requirement_ids": [],
+          "passes": 1
+        }
+      },
+      "error": null
+    },
+    {
+      "id": "case-02",
+      "status": "ok",
+      "kit": {
+        "source": {
+          "company": "GitLab",
+          "company_url": "https://gitlab.com",
+          "role": "Frontend React Developer",
+          "location": "Remote / On-site",
+          "jd_chars": 170,
+          "researched_at": "2026-09-23T04:21:47.860Z",
+          "pages_used": [
+            "https://gitlab.com",
+            "https://gitlab.com/jobs/"
+          ]
+        },
+        "company_brief": {
+          "summary": "GitLab operates at gitlab.com. The intelligent orchestration platform for DevSecOps, enabling teams and agents to ship trusted software at enterprise scale.",
+          "what_they_do": "The intelligent orchestration platform for DevSecOps, enabling teams and agents to ship trusted software at enterprise scale.",
+          "sources": [
+            "https://gitlab.com",
+            "https://gitlab.com/jobs/"
+          ]
+        },
+        "role": {
+          "title": "Frontend React Developer",
+          "seniority": "Mid-Senior",
+          "responsibilities": [
+            "Deliver reliable, scalable, and high-performance production software",
+            "Participate in architecture design, code reviews, and cross-team collaboration"
+          ],
+          "requirements": [
+            {
+              "id": "r1",
+              "text": "Frontend React Developer",
+              "kind": "technical",
+              "priority": "must"
+            },
+            {
+              "id": "r2",
+              "text": "Must have 3+ years experience with React, TypeScript, and Tailwind CSS. Experience with state management (Zustand/Redux) and unit ...",
+              "kind": "technical",
+              "priority": "must"
+            }
+          ]
+        },
+        "questions": [
+          {
+            "id": "q1",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "technical",
+            "prompt": "Explain your hands-on experience with: \"Frontend React Developer\". What architectural decisions, performance trade-offs, and failure modes have you encountered?",
+            "answer_outline": "1. Core technical principles of Frontend React Developer.\n2. Real-world implementation details and challenges.\n3. Testing, debugging, and production considerations.",
+            "difficulty": 2
+          },
+          {
+            "id": "q2",
+            "requirement_ids": [
+              "r1"
+            ],
+            "category": "system-design",
+            "prompt": "How would you design a scalable production service that incorporates Frontend React Developer?",
+            "answer_outline": "1. High-level component architecture.\n2. Data access patterns and storage schema.\n3. Scalability, caching, and resiliency strategies.",
+            "difficulty": 3
+          },
+          {
+            "id": "q3",
+            "requirement_ids": [
+              "r2"
+            ],
+            "category": "technical",
+            "prompt": "Explain your hands-on experience with: \"Must have 3+ years experience with React, TypeScript, and Tailwind CSS. Experience with state management (Zustand/Redux) and unit ...\". What architectural decisions, performance trade-offs, and failure modes have you encountered?",
+            "answer_outline": "1. Core technical principles of Must have 3+ years experience with React, TypeScript, and Tailwind CSS. Experience with state management (Zustand/Redux) and unit ....\n2. Real-world implementation details and challenges.\n3. Testing, debugging, and production considerations.",
+            "difficulty": 2
+          },
+          {
+            "id": "q4",
+            "requirement_ids": [
+              "r2"
+            ],
+            "category": "system-design",
+            "prompt": "How would you design a scalable production service that incorporates Must have 3+ years experience with React, TypeScript, and Tailwind CSS. Experience with state management (Zustand/Redux) and unit ...?",
+            "answer_outline": "1. High-level component architecture.\n2. Data access patterns and storage schema.\n3. Scalability, caching, and resiliency strategies.",
+            "difficulty": 3
+          }
+        ],
+        "flashcards": [
+          {
+            "id": "f1",
+            "front": "Core Concept: Frontend React Developer",
+            "back": "Key preparation outline for TECHNICAL evaluation:\n1. Direct alignment with requirement.\n2. Measurable implementation experience.\n3. Common interview pitfalls.",
+            "requirement_ids": [
+              "r1"
+            ]
+          },
+          {
+            "id": "f2",
+            "front": "Core Concept: Must have 3+ years experience with React, TypeScript, and Ta",
+            "back": "Key preparation outline for TECHNICAL evaluation:\n1. Direct alignment with requirement.\n2. Measurable implementation experience.\n3. Common interview pitfalls.",
+            "requirement_ids": [
+              "r2"
+            ]
+          }
+        ],
+        "schedule": {
+          "days_available": 3,
+          "days": [
+            {
+              "day": 1,
+              "focus": "SYSTEM-DESIGN & Priority Mastery",
+              "question_ids": [
+                "q2",
+                "q3"
+              ],
+              "minutes": 100
+            },
+            {
+              "day": 2,
+              "focus": "SYSTEM-DESIGN & Priority Mastery",
+              "question_ids": [
+                "q4"
+              ],
+              "minutes": 60
+            },
+            {
+              "day": 3,
+              "focus": "TECHNICAL & Priority Mastery",
+              "question_ids": [
+                "q1"
+              ],
+              "minutes": 40
+            }
+          ]
+        },
+        "coverage": {
+          "uncovered_requirement_ids": [],
+          "passes": 1
+        }
+      },
+      "error": null
+    }
+  ]
+}

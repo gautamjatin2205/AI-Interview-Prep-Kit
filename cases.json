@@ -1,0 +1,14 @@
+[
+  {
+    "id": "case-01",
+    "jd": "Senior Backend Engineer\nWe are looking for a Senior Node.js Engineer with 5+ years of experience building microservices, REST APIs, and working with MongoDB and AWS. Strong experience with Docker, CI/CD pipelines, and mentoring junior engineers is required. Bonus points for Next.js knowledge.",
+    "company_url": "https://posthog.com",
+    "days": 5
+  },
+  {
+    "id": "case-02",
+    "jd": "Frontend React Developer\nMust have 3+ years experience with React, TypeScript, and Tailwind CSS. Experience with state management (Zustand/Redux) and unit testing (Jest).",
+    "company_url": "https://gitlab.com",
+    "days": 3
+  }
+]
