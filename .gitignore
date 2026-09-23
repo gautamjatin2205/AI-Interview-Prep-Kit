@@ -38,3 +38,5 @@ next-env.d.ts
 
 # local database storage fallback
 /data/db.json
+
+.vercel
