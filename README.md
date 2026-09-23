@@ -2,6 +2,15 @@
 
 > **A full-stack web application that turns any Job Description and Company Website URL into a structured, highly personalized interview preparation kit.**
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-interview--prep--kit--delta.vercel.app-brightgreen?style=for-the-badge&logo=vercel)](https://interview-prep-kit-delta.vercel.app/)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-AI--Interview--Prep--Kit-blue?style=for-the-badge&logo=github)](https://github.com/gautamjatin2205/AI-Interview-Prep-Kit)
+
+| | Link |
+|---|---|
+| 🌐 **Live App** | [https://interview-prep-kit-delta.vercel.app/](https://interview-prep-kit-delta.vercel.app/) |
+| 📦 **GitHub Repository** | [https://github.com/gautamjatin2205/AI-Interview-Prep-Kit](https://github.com/gautamjatin2205/AI-Interview-Prep-Kit) |
+| 🗄️ **Database** | MongoDB Atlas (Cluster0) |
+
 ---
 
 ## 🌟 Overview & Highlights
@@ -144,3 +153,29 @@ The system does not rely on a fixed list of paths. The autonomous crawler perfor
 - **Access Control & Route Protection**: `middleware.js` blocks signed-out visitors from accessing `/dashboard` and redirects them to `/login`.
 - **User Kit Isolation**: All database queries (`/api/kits`) enforce `{ userId: user.userId }`, ensuring users can read and modify only their own kits.
 
+---
+
+## 🚀 Deployment Guide (Vercel)
+
+The application is deployed on **Vercel** as a monorepo (Next.js handles both frontend and backend via API routes — no separate backend deployment needed).
+
+### Live URL
+🌐 **[https://interview-prep-kit-delta.vercel.app/](https://interview-prep-kit-delta.vercel.app/)**
+
+### Deploy Your Own Instance
+
+1. **Fork** this repository on GitHub.
+2. Go to [vercel.com](https://vercel.com) → **New Project** → Import your fork.
+3. In the **Environment Variables** section, add:
+
+| Variable | Value | Required |
+|---|---|---|
+| MONGODB_URI | Your MongoDB Atlas connection string | ✅ Yes |
+| JWT_SECRET | A strong random secret string | ✅ Yes |
+| LLM_PROVIDER | uto (or groq, openai, gemini) | Optional |
+| OPENAI_API_KEY | Your OpenAI API key | Optional |
+| GROQ_API_KEY | Your Groq API key | Optional |
+
+4. Click **Deploy**. Vercel auto-detects Next.js and builds it.
+
+> **Note**: If MONGODB_URI is not set, the app falls back to a local JSON store, but on Vercel (serverless) persistent state requires MongoDB. Always provide a valid Atlas URI for production.
