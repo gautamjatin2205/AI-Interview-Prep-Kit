@@ -27,6 +27,8 @@ export default function LoginPage() {
 
       const data = await res.json();
       if (data.success) {
+        // Notify Navbar to refresh user state immediately
+        window.dispatchEvent(new Event('auth-change'));
         router.push('/dashboard');
         router.refresh();
       } else {
