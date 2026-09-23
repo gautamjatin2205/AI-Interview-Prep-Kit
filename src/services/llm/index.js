@@ -1,17 +1,242 @@
 import axios from 'axios';
 
-// Smart Rule-Based & Heuristic NLP Generator (Guarantees 100% reliable fallback)
+// ============================================================================
+// RETRY HELPER — exponential backoff for rate-limits across all providers
+// ============================================================================
+async function withRetry(fn, maxRetries = 3) {
+  let delay = 1000;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const status = err.response?.status;
+      const isRateLimit = status === 429 || status === 503;
+      if (isRateLimit && attempt < maxRetries) {
+        console.warn(`[LLM] Rate limited (${status}). Backing off for ${delay}ms (attempt ${attempt + 1}/${maxRetries})...`);
+        await new Promise(r => setTimeout(r, delay));
+        delay *= 2;
+      } else {
+        throw err;
+      }
+    }
+  }
+}
+
+// ============================================================================
+// PROVIDER: GEMINI (gemini-2.5-flash — generous free tier)
+// ============================================================================
+async function callGeminiJSON(prompt, systemPrompt = '') {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey || geminiKey.trim() === '') return null;
+
+  const fullPrompt = systemPrompt
+    ? `${systemPrompt}\n\n${prompt}\n\nRespond with valid JSON only. No markdown, no code fences, no explanation.`
+    : `${prompt}\n\nRespond with valid JSON only. No markdown, no code fences, no explanation.`;
+
+  return withRetry(async () => {
+    console.log('[LLM] Calling Gemini 2.5 Flash (JSON)...');
+    const res = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+      {
+        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: 4096,
+          responseMimeType: 'application/json'
+        }
+      },
+      { headers: { 'Content-Type': 'application/json' }, timeout: 25000 }
+    );
+    const raw = res.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+    return JSON.parse(cleaned);
+  }, 3);
+}
+
+async function callGeminiText(prompt, systemPrompt = '') {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey || geminiKey.trim() === '') return null;
+
+  const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
+
+  return withRetry(async () => {
+    console.log('[LLM] Calling Gemini 2.5 Flash (text)...');
+    const res = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+      {
+        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+        generationConfig: { temperature: 0.6, maxOutputTokens: 1024 }
+      },
+      { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
+    );
+    return res.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+  }, 3);
+}
+
+// ============================================================================
+// PROVIDER: GROQ (llama3-70b)
+// ============================================================================
+async function callGroqJSON(prompt, systemPrompt = '') {
+  const groqKey = process.env.GROQ_API_KEY;
+  if (!groqKey || groqKey.trim() === '') return null;
+
+  return withRetry(async () => {
+    console.log('[LLM] Calling Groq Llama3...');
+    const res = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+      model: 'llama3-70b-8192',
+      messages: [
+        { role: 'system', content: systemPrompt || 'You are a helpful assistant. Respond with valid JSON only.' },
+        { role: 'user', content: prompt }
+      ],
+      response_format: { type: 'json_object' }
+    }, {
+      headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+      timeout: 20000
+    });
+    return JSON.parse(res.data.choices[0].message.content);
+  }, 3);
+}
+
+async function callGroqText(prompt, systemPrompt = '') {
+  const groqKey = process.env.GROQ_API_KEY;
+  if (!groqKey || groqKey.trim() === '') return null;
+
+  return withRetry(async () => {
+    const res = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+      model: 'llama3-70b-8192',
+      messages: [
+        { role: 'system', content: systemPrompt || 'You are a helpful assistant.' },
+        { role: 'user', content: prompt }
+      ]
+    }, {
+      headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+      timeout: 15000
+    });
+    return res.data.choices[0].message.content?.trim() || '';
+  }, 3);
+}
+
+// ============================================================================
+// PROVIDER: OPENAI (gpt-4o-mini)
+// ============================================================================
+async function callOpenAIJSON(prompt, systemPrompt = '') {
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (!openaiKey || openaiKey.trim() === '') return null;
+
+  return withRetry(async () => {
+    console.log('[LLM] Calling OpenAI gpt-4o-mini...');
+    const res = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt || 'You are a helpful assistant. Respond with valid JSON only.' },
+        { role: 'user', content: prompt }
+      ],
+      response_format: { type: 'json_object' }
+    }, {
+      headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+      timeout: 20000
+    });
+    return JSON.parse(res.data.choices[0].message.content);
+  }, 3);
+}
+
+async function callOpenAIText(prompt, systemPrompt = '') {
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (!openaiKey || openaiKey.trim() === '') return null;
+
+  return withRetry(async () => {
+    const res = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt || 'You are a helpful assistant.' },
+        { role: 'user', content: prompt }
+      ]
+    }, {
+      headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+      timeout: 15000
+    });
+    return res.data.choices[0].message.content?.trim() || '';
+  }, 3);
+}
+
+// ============================================================================
+// PUBLIC API: callLLM — JSON mode (waterfall: Gemini → Groq → OpenAI)
+// ============================================================================
+export async function callLLM(prompt, systemPrompt = '') {
+  const provider = process.env.LLM_PROVIDER || 'auto';
+
+  if (provider === 'gemini' || provider === 'auto') {
+    const result = await callGeminiJSON(prompt, systemPrompt).catch(e => {
+      console.warn('[LLM] Gemini JSON failed:', e.message);
+      return null;
+    });
+    if (result) return result;
+  }
+
+  if (provider === 'groq' || provider === 'auto') {
+    const result = await callGroqJSON(prompt, systemPrompt).catch(e => {
+      console.warn('[LLM] Groq JSON failed:', e.message);
+      return null;
+    });
+    if (result) return result;
+  }
+
+  if (provider === 'openai' || provider === 'auto') {
+    const result = await callOpenAIJSON(prompt, systemPrompt).catch(e => {
+      console.warn('[LLM] OpenAI JSON failed:', e.message);
+      return null;
+    });
+    if (result) return result;
+  }
+
+  return null;
+}
+
+// ============================================================================
+// PUBLIC API: callLLMText — text mode (for chat, hints, evaluation)
+// ============================================================================
+export async function callLLMText(prompt, systemPrompt = '') {
+  const provider = process.env.LLM_PROVIDER || 'auto';
+
+  if (provider === 'gemini' || provider === 'auto') {
+    const result = await callGeminiText(prompt, systemPrompt).catch(e => {
+      console.warn('[LLM] Gemini text failed:', e.message);
+      return null;
+    });
+    if (result) return result;
+  }
+
+  if (provider === 'groq' || provider === 'auto') {
+    const result = await callGroqText(prompt, systemPrompt).catch(e => {
+      console.warn('[LLM] Groq text failed:', e.message);
+      return null;
+    });
+    if (result) return result;
+  }
+
+  if (provider === 'openai' || provider === 'auto') {
+    const result = await callOpenAIText(prompt, systemPrompt).catch(e => {
+      console.warn('[LLM] OpenAI text failed:', e.message);
+      return null;
+    });
+    if (result) return result;
+  }
+
+  return null;
+}
+
+// ============================================================================
+// FALLBACK: Rule-based heuristic kit generator (no LLM key configured)
+// ============================================================================
 function generateFallbackKit({ jd, companyUrl, companyBrief, days }) {
-  console.log('[LLM] Generating kit via Heuristic Intelligent Engine...');
+  console.log('[LLM] Generating kit via Heuristic Engine (no API key)...');
 
   const cleanJd = jd || '';
   const lines = cleanJd.split('\n').map(l => l.trim()).filter(l => l.length > 5);
 
-  // Extract requirements from text lines
   const requirements = [];
   let reqCounter = 1;
 
-  // Look for keywords
   const techKeywords = ['react', 'node', 'javascript', 'typescript', 'python', 'java', 'aws', 'sql', 'mongodb', 'docker', 'api', 'system design', 'microservices', 'git', 'ci/cd', 'frontend', 'backend', 'fullstack', 'css', 'html', 'rest'];
   const behaviouralKeywords = ['lead', 'mentoring', 'communication', 'teamwork', 'agile', 'scrum', 'collaboration', 'stakeholder', 'ownership'];
 
@@ -35,7 +260,6 @@ function generateFallbackKit({ jd, companyUrl, companyBrief, days }) {
     }
   });
 
-  // Ensure at least 3 requirements if JD is thin
   if (requirements.length === 0) {
     requirements.push(
       { id: 'r1', text: 'Core technical competency in position stack', kind: 'technical', priority: 'must' },
@@ -44,7 +268,6 @@ function generateFallbackKit({ jd, companyUrl, companyBrief, days }) {
     );
   }
 
-  // Generate questions referencing requirements
   const questions = [];
   let qCounter = 1;
 
@@ -80,14 +303,13 @@ function generateFallbackKit({ jd, companyUrl, companyBrief, days }) {
         id: `q${qCounter++}`,
         requirement_ids: [req.id],
         category: 'company-fit',
-        prompt: `Why are you interested in joining ${companyBrief.company_name || 'this company'} and how does your background in "${req.text}" align with our mission?`,
+        prompt: `Why are you interested in joining ${companyBrief?.company_name || 'this company'} and how does your background in "${req.text}" align with our mission?`,
         answer_outline: `1. Align personal career goals with company domain.\n2. Highlight relevant past achievements.\n3. Show enthusiasm for company tech stack and culture.`,
         difficulty: 1
       });
     }
   });
 
-  // Generate Flashcards
   const flashcards = requirements.map((req, idx) => ({
     id: `f${idx + 1}`,
     front: `Key Concept: ${req.text.slice(0, 50)}`,
@@ -95,15 +317,14 @@ function generateFallbackKit({ jd, companyUrl, companyBrief, days }) {
     requirement_ids: [req.id]
   }));
 
-  // Role details
-  const companyName = companyBrief.company_name || 'Target Company';
+  const companyName = companyBrief?.company_name || 'Target Company';
   const roleTitle = lines[0] ? lines[0].slice(0, 50) : 'Software Engineer';
 
   return {
     company_brief: {
-      summary: companyBrief.summary || `Analysis of ${companyName} for candidate interview preparation.`,
-      what_they_do: companyBrief.what_they_do || `${companyName} delivers products in the software engineering sector.`,
-      sources: companyBrief.pages_used || [companyUrl || 'http://localhost']
+      summary: companyBrief?.summary || `Analysis of ${companyName} for candidate interview preparation.`,
+      what_they_do: companyBrief?.what_they_do || `${companyName} delivers products in the software engineering sector.`,
+      sources: companyBrief?.pages_used || [companyUrl || 'http://localhost']
     },
     role: {
       title: roleTitle,
@@ -116,54 +337,5 @@ function generateFallbackKit({ jd, companyUrl, companyBrief, days }) {
   };
 }
 
-export async function callLLM(prompt, systemPrompt = '') {
-  const provider = process.env.LLM_PROVIDER || 'auto';
-  const openaiKey = process.env.OPENAI_API_KEY;
-  const groqKey = process.env.GROQ_API_KEY;
-
-  // 1. Try Groq (Ultra fast free tier)
-  if ((provider === 'groq' || provider === 'auto') && groqKey && groqKey.trim() !== '') {
-    try {
-      console.log('[LLM] Calling Groq Llama3 API...');
-      const res = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-        model: 'llama3-70b-8192',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt }
-        ],
-        response_format: { type: 'json_object' }
-      }, {
-        headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-        timeout: 15000
-      });
-      return JSON.parse(res.data.choices[0].message.content);
-    } catch (e) {
-      console.warn('[LLM] Groq call failed or rate-limited:', e.message);
-    }
-  }
-
-  // 2. Try OpenAI
-  if ((provider === 'openai' || provider === 'auto') && openaiKey && openaiKey.trim() !== '') {
-    try {
-      console.log('[LLM] Calling OpenAI API...');
-      const res = await axios.post('https://api.openai.com/v1/chat/completions', {
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt }
-        ],
-        response_format: { type: 'json_object' }
-      }, {
-        headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
-        timeout: 15000
-      });
-      return JSON.parse(res.data.choices[0].message.content);
-    } catch (e) {
-      console.warn('[LLM] OpenAI call failed:', e.message);
-    }
-  }
-
-  return null;
-}
-
 export { generateFallbackKit };
+

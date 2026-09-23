@@ -34,7 +34,7 @@ This repository contains the complete full-stack implementation of **The AI Inte
 - **Backend API**: Node.js + Next.js API Routes / Express.
 - **Database**: MongoDB (Mongoose ORM) configured via `MONGODB_URI` in `.env`, with a file-backed JSON store fallback (`src/lib/db.js`).
 - **Web Crawler**: Cheerio + Axios + SSRF URL Security Validation.
-- **LLM Engine**: Multi-provider support (Groq / OpenAI / Gemini / Built-in Heuristic NLP Engine fallback ensuring rate-limit immunity).
+- **LLM & AI Engine**: **Google Gemini 2.5 Flash** (via Google Generative Language REST API) with multi-provider waterfall (Groq Llama 3 / OpenAI GPT-4o-mini / Built-in Heuristic NLP Engine fallback ensuring zero downtime and rate-limit immunity).
 
 ---
 
@@ -119,10 +119,71 @@ Every generated kit matches the mandatory **Appendix A** structure:
 - `source`: `{ company, company_url, role, location, jd_chars, researched_at, pages_used }`
 - `company_brief`: `{ summary, what_they_do, sources }`
 - `role`: `{ title, seniority, responsibilities, requirements: [{ id, text, kind, priority }] }`
-- `questions`: `[{ id, requirement_ids, category, prompt, answer_outline, difficulty }]`
 - `flashcards`: `[{ id, front, back, requirement_ids }]`
 - `schedule`: `{ days_available, days: [{ day, focus, question_ids, minutes }] }`
 - `coverage`: `{ uncovered_requirement_ids, passes }`
+
+---
+
+## 🤖 LLM & AI Engine Integration (Google Gemini 2.5 Flash)
+
+The platform is powered by **Google Gemini 2.5 Flash** (`gemini-2.5-flash`), with automated graceful waterfalls to Groq (`llama3-70b-8192`), OpenAI (`gpt-4o-mini`), and an intelligent heuristic engine.
+
+```
+                  ┌────────────────────────────────────────┐
+                  │          USER / FRONTEND UI            │
+                  └──────────────────┬─────────────────────┘
+                                     │
+           ┌─────────────────────────┼─────────────────────────┐
+           ▼                         ▼                         ▼
+   /api/ai/evaluate             /api/ai/chat              /api/ai/hint
+  (Answer Evaluator)        (Contextual Coach)         (Strategy Roadmap)
+           │                         │                         │
+           └─────────────────────────┼─────────────────────────┘
+                                     │
+                                     ▼
+                      src/services/llm/index.js
+                                     │
+             ┌───────────────────────┼───────────────────────┐
+             ▼ (Primary)             ▼ (Secondary)           ▼ (Tertiary)
+       Google Gemini            Groq Cloud              OpenAI
+     (gemini-2.5-flash)      (llama3-70b-8192)       (gpt-4o-mini)
+             │                       │                       │
+             └───────────────────────┴───────────────────────┘
+                                     │ (All Keys Missing / Exhausted)
+                                     ▼
+                        Deterministic Heuristic Engine
+                           (Guaranteed 0-Downtime)
+```
+
+### 1. 🎯 Interactive AI Answer Evaluator (Practice Mode)
+- **Endpoint**: `POST /api/ai/evaluate`
+- Located directly inside the interactive flashcard practice runner (`/practice/[id]`).
+- Candidates type their answer and receive an instant multi-dimensional evaluation:
+  - **Score (1–10)** and Performance Grade (`Excellent`, `Good`, `Fair`, `Needs Work`).
+  - **Key Strengths**: Bulleted list of concepts the candidate explained well.
+  - **Areas to Polish**: Missed edge cases, scalability points, or STAR structure gaps.
+  - **Exemplar Model Answer**: Ideal response demonstrating high-conviction delivery.
+  - **Actionable Delivery Tip**: Behavioral advice for real-time interview performance.
+
+### 2. 💬 Floating AI Interview Coach (Kit Studio)
+- **Endpoint**: `POST /api/ai/chat`
+- A persistent, glassmorphic widget (`Ask AI Coach`) accessible on any prep kit view.
+- **Deep Context Grounding**: Automatically injects target company research, role seniority, extracted requirements, and question bank into Gemini's system instructions.
+- Provides quick prompt suggestions (e.g., *"How should I introduce myself?"*, *"Summarize company values"*, *"Top 3 interview tips"*) and full conversational thread memory.
+
+### 3. 💡 AI Question Hints System
+- **Endpoint**: `POST /api/ai/hint`
+- Every question card features a dedicated **"AI Hint"** button.
+- Generates strategic interview guidance:
+  1. What the interviewer is secretly testing for
+  2. Optimal mental model/framework (e.g. STAR method, system design trade-offs)
+  3. Fatal pitfalls to avoid
+
+### 4. ⚡ End-to-End Pipeline AI Generation
+- **Company Brief**: Synthesizes unstructured crawled text and hiring discussions into a concise executive brief.
+- **Category-Tailored Generation**: Separate LLM calls for technical, behavioral, and system design categories.
+- **Requirement-Mapped Flashcards**: AI-generated flashcards directly derived from extracted job description requirements.
 
 ---
 
@@ -168,14 +229,15 @@ The application is deployed on **Vercel** as a monorepo (Next.js handles both fr
 2. Go to [vercel.com](https://vercel.com) → **New Project** → Import your fork.
 3. In the **Environment Variables** section, add:
 
-| Variable | Value | Required |
-|---|---|---|
-| MONGODB_URI | Your MongoDB Atlas connection string | ✅ Yes |
-| JWT_SECRET | A strong random secret string | ✅ Yes |
-| LLM_PROVIDER | uto (or groq, openai, gemini) | Optional |
-| OPENAI_API_KEY | Your OpenAI API key | Optional |
-| GROQ_API_KEY | Your Groq API key | Optional |
+| Variable | Value | Required | Description |
+|---|---|---|---|
+| `MONGODB_URI` | Your MongoDB Atlas connection string | ✅ Yes | Database for user accounts and kits |
+| `JWT_SECRET` | A strong random secret string | ✅ Yes | Signs session tokens |
+| `GEMINI_API_KEY` | Google AI Studio Gemini API Key | ✅ Recommended | Powers Gemini 2.5 Flash LLM features |
+| `LLM_PROVIDER` | `gemini` (or `groq`, `openai`, `auto`) | Optional | Selects default LLM provider |
+| `GROQ_API_KEY` | Your Groq API key | Optional | Backup Llama 3 70B provider |
+| `OPENAI_API_KEY` | Your OpenAI API key | Optional | Backup GPT-4o-mini provider |
 
 4. Click **Deploy**. Vercel auto-detects Next.js and builds it.
 
-> **Note**: If MONGODB_URI is not set, the app falls back to a local JSON store, but on Vercel (serverless) persistent state requires MongoDB. Always provide a valid Atlas URI for production.
+> **Note**: If `MONGODB_URI` is not set, the app falls back to a local JSON store, but on Vercel (serverless) persistent state requires MongoDB. Always provide a valid Atlas URI for production.

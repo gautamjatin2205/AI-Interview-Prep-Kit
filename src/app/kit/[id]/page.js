@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { 
   Building2, Calendar, ShieldCheck, RefreshCw, Save, Plus, Trash2, 
   Edit3, Pin, CheckCircle2, AlertCircle, BookOpen, Layers, Sparkles, 
-  ExternalLink, Download, Printer, Filter, Star, Clock, ChevronRight, Eye
+  ExternalLink, Download, Printer, Filter, Star, Clock, ChevronRight, Eye,
+  MessageSquare, Send, Bot, Lightbulb, X, Minimize2, Maximize2, HelpCircle
 } from 'lucide-react';
 
 export default function KitBuilderPage({ params }) {
@@ -18,6 +19,124 @@ export default function KitBuilderPage({ params }) {
   const [activeTab, setActiveTab] = useState('questions'); // 'questions', 'brief', 'schedule', 'flashcards'
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
   const [statusMsg, setStatusMsg] = useState(null);
+
+  // AI Question Hints state
+  const [hints, setHints] = useState({});
+  const [loadingHint, setLoadingHint] = useState({});
+
+  // AI Chat Assistant state
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState([
+    {
+      role: 'assistant',
+      content: "Hello! I'm your AI Interview Coach. I've analyzed this entire preparation kit, including the company research and job requirements. What would you like help with?",
+      time: 'Just now'
+    }
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatBottomRef = useRef(null);
+
+  useEffect(() => {
+    if (chatOpen && chatBottomRef.current) {
+      chatBottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, chatOpen]);
+
+  const handleGetHint = async (q) => {
+    if (hints[q.id]) {
+      // Toggle off if already showing
+      setHints(prev => {
+        const next = { ...prev };
+        delete next[q.id];
+        return next;
+      });
+      return;
+    }
+
+    setLoadingHint(prev => ({ ...prev, [q.id]: true }));
+    try {
+      const res = await fetch('/api/ai/hint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: q.prompt,
+          roleTitle: kit.role?.title,
+          company: kit.source?.company || kit.company_brief?.company_name,
+          category: q.category
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.hint) {
+        setHints(prev => ({ ...prev, [q.id]: data.hint }));
+      } else {
+        alert(data.error || 'Could not generate hint.');
+      }
+    } catch (err) {
+      alert('Error fetching hint: ' + err.message);
+    } finally {
+      setLoadingHint(prev => ({ ...prev, [q.id]: false }));
+    }
+  };
+
+  const handleSendChatMessage = async (msgToSend = chatInput) => {
+    const text = (msgToSend || '').trim();
+    if (!text || chatLoading) return;
+
+    const userMsg = {
+      role: 'user',
+      content: text,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setChatMessages(prev => [...prev, userMsg]);
+    setChatInput('');
+    setChatLoading(true);
+
+    try {
+      const res = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kitId: kit.id || kit._id,
+          message: text,
+          history: chatMessages.slice(-6).map(m => ({ role: m.role, content: m.content }))
+        })
+      });
+
+      const data = await res.json();
+      if (data.success && data.reply) {
+        setChatMessages(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: data.reply,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }
+        ]);
+      } else {
+        setChatMessages(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: data.error || 'Sorry, I encountered an issue generating a response. Please try again.',
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }
+        ]);
+      }
+    } catch (err) {
+      setChatMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: 'Network error: ' + err.message,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchKit();
@@ -489,8 +608,28 @@ export default function KitBuilderPage({ params }) {
                             />
                           </div>
 
-                          {/* Pin & Delete Actions */}
+                          {/* Pin, AI Hint & Delete Actions */}
                           <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleGetHint(q)}
+                              disabled={loadingHint[q.id]}
+                              className={`p-2 sm:px-3 sm:py-2 rounded-xl transition-all flex items-center gap-1.5 text-xs font-semibold ${
+                                hints[q.id]
+                                  ? 'text-amber-300 bg-amber-500/20 border border-amber-500/30'
+                                  : 'text-slate-400 hover:text-amber-300 bg-slate-900 border border-white/5 hover:border-amber-500/30'
+                              }`}
+                              title="Get AI Interviewer Hint & Mental Model"
+                            >
+                              {loadingHint[q.id] ? (
+                                <RefreshCw className="w-4 h-4 text-amber-300 animate-spin" />
+                              ) : (
+                                <Lightbulb className={`w-4 h-4 ${hints[q.id] ? 'fill-amber-400 text-amber-400' : 'text-amber-400'}`} />
+                              )}
+                              <span className="hidden sm:inline">
+                                {hints[q.id] ? 'Hide Hint' : 'AI Hint'}
+                              </span>
+                            </button>
+
                             <button
                               onClick={() => togglePinQuestion(q.id)}
                               className={`p-2.5 rounded-xl transition-all ${
@@ -512,6 +651,27 @@ export default function KitBuilderPage({ params }) {
                             </button>
                           </div>
                         </div>
+
+                        {/* AI Hint Strategy Box */}
+                        {hints[q.id] && (
+                          <div className="p-4 bg-gradient-to-r from-amber-950/30 to-[#0a1228] border border-amber-500/30 rounded-xl space-y-2 text-left animate-in fade-in duration-200 shadow-md">
+                            <div className="flex items-center justify-between border-b border-amber-500/20 pb-2">
+                              <span className="text-[11px] font-mono font-bold text-amber-300 uppercase flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                                AI Interview Roadmap & Mental Framework:
+                              </span>
+                              <button 
+                                onClick={() => setHints(prev => { const n = {...prev}; delete n[q.id]; return n; })}
+                                className="text-[10px] text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-900/60"
+                              >
+                                Close
+                              </button>
+                            </div>
+                            <p className="text-xs text-slate-200 leading-relaxed font-sans whitespace-pre-line">
+                              {hints[q.id]}
+                            </p>
+                          </div>
+                        )}
 
                         {/* Answer Outline / Assessment Criteria */}
                         <div className="space-y-1.5">
@@ -787,6 +947,132 @@ export default function KitBuilderPage({ params }) {
           </div>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* FLOATING AI INTERVIEW COACH WIDGET (Gemini-Powered)                       */}
+      {/* ========================================================================= */}
+      <div className="fixed bottom-6 right-6 z-50">
+        {!chatOpen ? (
+          <button
+            onClick={() => setChatOpen(true)}
+            className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-indigo-600 via-sky-600 to-teal-500 hover:from-indigo-500 hover:to-sky-500 text-white font-bold text-xs sm:text-sm rounded-full shadow-2xl shadow-indigo-500/40 hover:scale-105 active:scale-95 transition-all border border-white/20 group"
+          >
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <Bot className="w-4 h-4 text-white group-hover:rotate-12 transition-transform" />
+            <span>Ask AI Coach</span>
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+          </button>
+        ) : (
+          <div className="w-[92vw] sm:w-[420px] h-[550px] bg-[#080e1e]/95 backdrop-blur-xl border border-indigo-500/30 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-4 bg-gradient-to-r from-indigo-950/80 via-slate-900 to-sky-950/80 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-sky-400 flex items-center justify-center text-white shadow-md">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
+                    <span>AI Interview Coach</span>
+                    <span className="badge-pill bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-mono py-0 px-1.5">
+                      Gemini
+                    </span>
+                  </h4>
+                  <p className="text-[10px] text-slate-400 truncate max-w-[220px]">
+                    Context: {kit.source?.company || 'Company'} &bull; {kit.role?.title || 'Role'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setChatOpen(false)}
+                  className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  title="Close Assistant"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Prompts */}
+            <div className="px-3 py-2 bg-slate-900/60 border-b border-white/5 flex gap-1.5 overflow-x-auto text-[11px] no-scrollbar">
+              {[
+                'How should I introduce myself?',
+                'Summarize company values',
+                'Top 3 interview tips'
+              ].map((suggestion, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSendChatMessage(suggestion)}
+                  disabled={chatLoading}
+                  className="px-2.5 py-1 bg-white/5 hover:bg-indigo-500/20 hover:text-indigo-200 hover:border-indigo-500/30 border border-white/5 rounded-lg text-slate-300 whitespace-nowrap transition-colors flex-shrink-0 disabled:opacity-40"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+
+            {/* Chat Messages */}
+            <div className="flex-1 p-4 overflow-y-auto space-y-3.5 text-xs">
+              {chatMessages.map((msg, i) => (
+                <div
+                  key={i}
+                  className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                >
+                  <div
+                    className={`max-w-[85%] p-3 rounded-2xl leading-relaxed whitespace-pre-line ${
+                      msg.role === 'user'
+                        ? 'bg-gradient-to-r from-indigo-600 to-sky-600 text-white rounded-br-none shadow-md'
+                        : 'bg-slate-900/90 text-slate-200 border border-white/10 rounded-bl-none shadow-sm'
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                  <span className="text-[9px] text-slate-500 mt-1 px-1 font-mono">
+                    {msg.time}
+                  </span>
+                </div>
+              ))}
+
+              {chatLoading && (
+                <div className="flex items-center gap-2 p-3 bg-slate-900/80 rounded-2xl rounded-bl-none border border-white/10 w-fit">
+                  <RefreshCw className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
+                  <span className="text-xs text-slate-400">Coach is preparing advice...</span>
+                </div>
+              )}
+              <div ref={chatBottomRef} />
+            </div>
+
+            {/* Input Bar */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSendChatMessage();
+              }}
+              className="p-3 bg-slate-950 border-t border-white/10 flex items-center gap-2"
+            >
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Ask about this role, company, or questions..."
+                disabled={chatLoading}
+                className="flex-1 bg-slate-900/90 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={!chatInput.trim() || chatLoading}
+                className="p-2.5 bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white rounded-xl shadow-md transition-all disabled:opacity-40"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

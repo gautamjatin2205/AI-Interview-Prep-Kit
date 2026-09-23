@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   BookOpen, Star, RotateCcw, CheckCircle2, Eye, ArrowRight, ArrowLeft, 
-  Trophy, Sparkles, Brain, Award, ShieldAlert, Zap
+  Trophy, Sparkles, Brain, Award, ShieldAlert, Zap, Bot, Send, 
+  CheckCircle, AlertTriangle, Lightbulb, RefreshCw
 } from 'lucide-react';
 
 export default function PracticeModePage({ params }) {
@@ -16,6 +17,12 @@ export default function PracticeModePage({ params }) {
   const [revealed, setRevealed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lastRatingSaved, setLastRatingSaved] = useState(null);
+
+  // AI Answer Evaluator state
+  const [answers, setAnswers] = useState({});
+  const [evaluating, setEvaluating] = useState(false);
+  const [evaluations, setEvaluations] = useState({});
+  const [evalError, setEvalError] = useState(null);
 
   useEffect(() => {
     fetchPracticeDeck();
@@ -91,6 +98,45 @@ export default function PracticeModePage({ params }) {
     }
   };
 
+  const handleEvaluateAnswer = async () => {
+    const card = cards[currentIndex];
+    if (!card) return;
+    const answer = answers[card.id] || '';
+    if (!answer.trim()) {
+      setEvalError('Please type your answer above before requesting an evaluation.');
+      return;
+    }
+
+    setEvaluating(true);
+    setEvalError(null);
+
+    try {
+      const res = await fetch('/api/ai/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: card.front,
+          userAnswer: answer,
+          category: 'technical',
+          roleContext: 'Software Engineering candidate'
+        })
+      });
+
+      const data = await res.json();
+      if (data.success && data.evaluation) {
+        setEvaluations(prev => ({ ...prev, [card.id]: data.evaluation }));
+        // Automatically reveal card criteria after receiving AI evaluation
+        setRevealed(true);
+      } else {
+        setEvalError(data.error || 'Evaluation failed. Please try again.');
+      }
+    } catch (err) {
+      setEvalError('Network error during evaluation: ' + err.message);
+    } finally {
+      setEvaluating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="py-24 text-center space-y-4">
@@ -117,6 +163,7 @@ export default function PracticeModePage({ params }) {
 
   const currentCard = cards[currentIndex];
   const progressPercent = stats ? Math.round((stats.covered / Math.max(1, stats.total)) * 100) : 0;
+  const currentEvaluation = evaluations[currentCard?.id];
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-20">
@@ -130,6 +177,10 @@ export default function PracticeModePage({ params }) {
             </span>
             <span className="badge-pill bg-slate-800 text-slate-300 font-mono text-xs">
               Card {currentIndex + 1} of {cards.length}
+            </span>
+            <span className="badge-pill bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono text-xs flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-indigo-400" />
+              AI Evaluator Active
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white">Interactive Practice Mode</h1>
@@ -199,7 +250,124 @@ export default function PracticeModePage({ params }) {
           </h2>
         </div>
 
-        {/* Card Back / Answer Area */}
+        {/* AI Answer Input Box */}
+        <div className="text-left space-y-3 bg-[#060a14]/90 p-5 rounded-2xl border border-white/10 relative">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-slate-300 flex items-center gap-2">
+              <Bot className="w-4 h-4 text-indigo-400" />
+              <span>Practice Your Answer (AI Evaluated):</span>
+            </label>
+            <span className="text-[10px] font-mono text-slate-500">Gemini 2.5 Flash</span>
+          </div>
+
+          <textarea
+            rows={3}
+            value={answers[currentCard.id] || ''}
+            onChange={(e) => setAnswers(prev => ({ ...prev, [currentCard.id]: e.target.value }))}
+            placeholder="Type your explanation or thoughts here as you would in an interview..."
+            className="w-full bg-slate-900/90 border border-white/10 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+          />
+
+          {evalError && (
+            <div className="flex items-center gap-2 text-rose-400 text-xs bg-rose-500/10 p-2.5 rounded-lg border border-rose-500/20">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <span>{evalError}</span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-[11px] text-slate-500">
+              Type your answer to receive automated scoring and feedback.
+            </span>
+            <button
+              onClick={handleEvaluateAnswer}
+              disabled={evaluating}
+              className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-md shadow-indigo-500/20 transition-all disabled:opacity-50"
+            >
+              {evaluating ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Evaluating...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Evaluate with AI</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* AI Evaluation Assessment Result */}
+        {currentEvaluation && (
+          <div className="p-6 bg-gradient-to-b from-[#0a1228] to-[#060a14] rounded-2xl border border-indigo-500/30 text-left space-y-4 animate-in fade-in duration-300 shadow-xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="badge-pill bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold text-xs uppercase flex items-center gap-1.5">
+                  <Bot className="w-3.5 h-3.5 text-indigo-400" />
+                  AI Evaluation
+                </span>
+                <span className={`badge-pill text-xs font-extrabold ${
+                  currentEvaluation.score >= 8 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
+                  currentEvaluation.score >= 6 ? 'bg-sky-500/20 text-sky-300 border-sky-500/30' :
+                  'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                }`}>
+                  Score: {currentEvaluation.score}/10 ({currentEvaluation.grade || 'Evaluated'})
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Strengths */}
+              <div className="p-3.5 bg-emerald-950/20 border border-emerald-500/20 rounded-xl space-y-2">
+                <strong className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  Key Strengths
+                </strong>
+                <ul className="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                  {(currentEvaluation.strengths || []).map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Improvements */}
+              <div className="p-3.5 bg-amber-950/20 border border-amber-500/20 rounded-xl space-y-2">
+                <strong className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  Areas to Polish
+                </strong>
+                <ul className="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                  {(currentEvaluation.improvements || []).map((imp, i) => (
+                    <li key={i}>{imp}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Model Answer */}
+            {currentEvaluation.model_answer && (
+              <div className="p-4 bg-slate-900/90 border border-white/10 rounded-xl space-y-1.5">
+                <span className="text-[11px] font-mono font-bold text-sky-400 uppercase">Model Exemplar Answer:</span>
+                <p className="text-xs text-slate-200 leading-relaxed font-sans">{currentEvaluation.model_answer}</p>
+              </div>
+            )}
+
+            {/* Pro Tip */}
+            {currentEvaluation.tip && (
+              <div className="flex items-start gap-2.5 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-xs text-indigo-200">
+                <Lightbulb className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <strong className="font-bold text-white">Interview Delivery Tip: </strong>
+                  <span>{currentEvaluation.tip}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Card Back / Answer Criteria Area */}
         {revealed ? (
           <div className="p-6 sm:p-8 bg-[#060a14] rounded-2xl border border-white/10 space-y-4 text-left animate-in fade-in duration-300 relative shadow-inner">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
@@ -215,10 +383,10 @@ export default function PracticeModePage({ params }) {
             </p>
           </div>
         ) : (
-          <div className="py-6">
+          <div className="py-4">
             <button
               onClick={() => setRevealed(true)}
-              className="py-4 px-8 bg-gradient-to-r from-sky-600 via-sky-500 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-extrabold text-sm rounded-2xl shadow-xl shadow-sky-600/30 inline-flex items-center gap-2.5 transition-all hover:scale-105 active:scale-95"
+              className="py-3.5 px-7 bg-gradient-to-r from-sky-600 via-sky-500 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-xl shadow-sky-600/30 inline-flex items-center gap-2.5 transition-all hover:scale-105 active:scale-95"
             >
               <Eye className="w-4 h-4" />
               <span>Reveal Key Answer Criteria</span>
