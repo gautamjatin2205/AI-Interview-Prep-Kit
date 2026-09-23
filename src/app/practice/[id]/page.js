@@ -238,15 +238,15 @@ export default function PracticeModePage({ params }) {
         <div className="space-y-4 relative">
           <div className="flex items-center justify-center gap-2">
             <span className="font-mono text-xs font-bold text-slate-400 bg-slate-900 border border-white/5 px-2.5 py-1 rounded-md">
-              {currentCard.id}
+              {currentCard?.id || 'Card'}
             </span>
             <span className="badge-pill bg-sky-500/10 text-sky-400 border border-sky-500/20 font-mono text-[11px]">
-              Reqs: {(currentCard.requirement_ids || []).join(', ')}
+              Reqs: {(currentCard?.requirement_ids || []).join(', ')}
             </span>
           </div>
 
           <h2 className="text-2xl sm:text-3xl font-extrabold text-white leading-relaxed tracking-tight max-w-xl mx-auto">
-            {currentCard.front}
+            {currentCard?.front || 'No prompt available'}
           </h2>
         </div>
 
@@ -262,8 +262,8 @@ export default function PracticeModePage({ params }) {
 
           <textarea
             rows={3}
-            value={answers[currentCard.id] || ''}
-            onChange={(e) => setAnswers(prev => ({ ...prev, [currentCard.id]: e.target.value }))}
+            value={currentCard?.id ? (answers[currentCard.id] || '') : ''}
+            onChange={(e) => currentCard?.id && setAnswers(prev => ({ ...prev, [currentCard.id]: e.target.value }))}
             placeholder="Type your explanation or thoughts here as you would in an interview..."
             className="w-full bg-slate-900/90 border border-white/10 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
           />
@@ -379,7 +379,7 @@ export default function PracticeModePage({ params }) {
             </div>
 
             <p className="text-sm text-slate-200 leading-relaxed font-mono whitespace-pre-wrap">
-              {currentCard.back}
+              {currentCard?.back || 'No outline provided.'}
             </p>
           </div>
         ) : (

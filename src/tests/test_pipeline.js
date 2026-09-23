@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import assert from 'assert';
 import { allocateSchedule, runCoverageCheckAndSecondPass, generateInterviewKit } from '../services/pipeline/index.js';
 

@@ -38,6 +38,15 @@ export async function connectDB() {
   }
 }
 
+// Safe query helper: only queries _id when id is a valid Mongo ObjectId to prevent CastError
+export function getKitQuery(id) {
+  if (!id) return { id: '' };
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    return { $or: [{ id: id }, { _id: id }] };
+  }
+  return { id: String(id) };
+}
+
 // In-memory fallback store if file system is read-only
 let memoryStore = { users: [], kits: [], practice: [] };
 

@@ -14,13 +14,8 @@ export function middleware(request) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect unauthenticated users at root '/' to /register (onboarding flow)
-  if (pathname === '/' && !token) {
-    return NextResponse.redirect(new URL('/register', request.url));
-  }
-
-  // Redirect already-authenticated users away from auth pages and root to dashboard
-  if ((pathname === '/login' || pathname === '/register' || pathname === '/') && token) {
+  // Redirect already-authenticated users away from auth pages (login/register) to dashboard
+  if ((pathname === '/login' || pathname === '/register') && token) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
@@ -28,5 +23,5 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/', '/dashboard/:path*', '/kit/:path*', '/practice/:path*', '/login', '/register'],
+  matcher: ['/dashboard/:path*', '/kit/:path*', '/practice/:path*', '/login', '/register'],
 };

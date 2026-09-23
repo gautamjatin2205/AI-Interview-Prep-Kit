@@ -1,17 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getAuthUser } from '../../../../lib/auth.js';
-import { connectDB, FileDB } from '../../../../lib/db.js';
+import { connectDB, FileDB, getKitQuery } from '../../../../lib/db.js';
 import PrepKit from '../../../../models/PrepKit.js';
-import mongoose from 'mongoose';
 
-// Helper: find kit by custom id OR MongoDB _id (handles CastError gracefully)
 async function findKitById(id) {
-  const query = { id: id }; // always search by custom string id first
-  // Also try MongoDB _id if it looks like a valid ObjectId
-  if (mongoose.Types.ObjectId.isValid(id)) {
-    return await PrepKit.findOne({ $or: [{ id: id }, { _id: id }] });
-  }
-  return await PrepKit.findOne(query);
+  return await PrepKit.findOne(getKitQuery(id));
 }
 
 export async function GET(req, { params }) {
@@ -48,13 +41,25 @@ export async function PUT(req, { params }) {
     let savedKit = null;
 
     if (isMongo) {
-      // Security: only allow owner to update
-      const filter = { id: id };
-      if (user) filter.userId = user.userId;
+      const existingKit = await findKitById(id);
+      if (!existingKit) {
+        return NextResponse.json({ success: false, error: 'Kit not found.' }, { status: 404 });
+      }
+
+      if (user && existingKit.userId && existingKit.userId !== 'guest' && existingKit.userId !== user.userId) {
+        return NextResponse.json({ success: false, error: 'Kit not found or access denied.' }, { status: 403 });
+      }
+
+      const updatedDoc = {
+        ...updatedKitData,
+        id: existingKit.id || id,
+        userId: user ? user.userId : existingKit.userId || 'guest',
+        updatedAt: new Date()
+      };
 
       const result = await PrepKit.findOneAndUpdate(
-        filter,
-        { $set: { ...updatedKitData, id: id, updatedAt: new Date() } },
+        getKitQuery(id),
+        { $set: updatedDoc },
         { new: true, runValidators: false }
       );
 
@@ -83,7 +88,7 @@ export async function DELETE(req, { params }) {
     const isMongo = await connectDB();
 
     if (isMongo) {
-      await PrepKit.deleteOne({ id: id });
+      await PrepKit.deleteOne(getKitQuery(id));
     } else {
       FileDB.deleteKit(id);
     }

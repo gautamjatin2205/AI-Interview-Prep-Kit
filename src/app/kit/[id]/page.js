@@ -138,6 +138,33 @@ export default function KitBuilderPage({ params }) {
     }
   };
 
+  const normalizeKit = (k) => {
+    if (!k) return null;
+    return {
+      ...k,
+      source: k.source || {},
+      company_brief: {
+        summary: '',
+        what_they_do: '',
+        sources: [],
+        ...(k.company_brief || {})
+      },
+      role: {
+        title: k.role?.title || k.source?.role || 'Target Role',
+        seniority: k.role?.seniority || 'Mid-Senior',
+        responsibilities: k.role?.responsibilities || [],
+        requirements: k.role?.requirements || []
+      },
+      questions: k.questions || [],
+      flashcards: k.flashcards || [],
+      schedule: {
+        days_available: k.schedule?.days_available || 5,
+        days: k.schedule?.days || []
+      },
+      coverage: k.coverage || { passes: 1, uncovered_requirement_ids: [] }
+    };
+  };
+
   useEffect(() => {
     fetchKit();
   }, [id]);
@@ -146,8 +173,8 @@ export default function KitBuilderPage({ params }) {
     try {
       const res = await fetch(`/api/kits/${id}`);
       const data = await res.json();
-      if (data.success) {
-        setKit(data.kit);
+      if (data.success && data.kit) {
+        setKit(normalizeKit(data.kit));
       }
     } catch (err) {
       console.error('Failed to load kit:', err);
@@ -165,8 +192,8 @@ export default function KitBuilderPage({ params }) {
         body: JSON.stringify(updatedKit)
       });
       const data = await res.json();
-      if (data.success) {
-        setKit(data.kit);
+      if (data.success && data.kit) {
+        setKit(normalizeKit(data.kit));
         setStatusMsg('All changes saved successfully!');
         setTimeout(() => setStatusMsg(null), 3000);
       }
@@ -221,7 +248,7 @@ export default function KitBuilderPage({ params }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `prep-kit-${(kit.source.company || 'export').toLowerCase().replace(/\s+/g, '-')}.json`;
+    a.download = `prep-kit-${(kit.source?.company || 'export').toLowerCase().replace(/\s+/g, '-')}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };

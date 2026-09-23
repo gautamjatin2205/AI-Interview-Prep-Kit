@@ -68,7 +68,7 @@ ${kitContext}`;
 
     // Format conversational history
     const historyText = history.slice(-6).map(h => `${h.role === 'user' ? 'Candidate' : 'Coach'}: ${h.content}`).join('\n');
-    const fullPrompt = historyText 
+    const fullPrompt = historyText
       ? `Previous conversation:\n${historyText}\n\nCandidate: ${message}\nCoach:`
       : `Candidate: ${message}\nCoach:`;
 

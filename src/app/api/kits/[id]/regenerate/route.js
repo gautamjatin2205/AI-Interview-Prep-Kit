@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectDB, FileDB } from '../../../../../lib/db.js';
+import { connectDB, FileDB, getKitQuery } from '../../../../../lib/db.js';
 import PrepKit from '../../../../../models/PrepKit.js';
 import { allocateSchedule } from '../../../../../services/pipeline/index.js';
 import { crawlCompanySite } from '../../../../../services/crawler/index.js';
@@ -13,7 +13,7 @@ export async function POST(req, { params }) {
     let kit = null;
 
     if (isMongo) {
-      kit = await PrepKit.findOne({ $or: [{ id: id }, { _id: id }] });
+      kit = await PrepKit.findOne(getKitQuery(id));
     } else {
       kit = FileDB.getKitById(id);
     }
@@ -74,7 +74,7 @@ export async function POST(req, { params }) {
     // Save back to DB
     if (isMongo) {
       await PrepKit.findOneAndUpdate(
-        { $or: [{ id: id }, { _id: id }] },
+        getKitQuery(id),
         { ...updatedKit, updatedAt: new Date() }
       );
     } else {

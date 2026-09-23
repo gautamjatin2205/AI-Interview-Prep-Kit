@@ -13,7 +13,10 @@ export async function GET(req) {
     let kits = [];
 
     if (isMongo) {
-      const docs = await PrepKit.find({ userId: userId }).sort({ createdAt: -1 });
+      const query = userId && userId !== 'guest'
+        ? { $or: [{ userId: userId }, { userId: 'guest' }, { userId: { $exists: false } }] }
+        : { $or: [{ userId: 'guest' }, { userId: { $exists: false } }] };
+      const docs = await PrepKit.find(query).sort({ createdAt: -1 });
       kits = docs.map(doc => doc.toObject()); // Serialize properly
     } else {
       kits = FileDB.getUserKits(userId);

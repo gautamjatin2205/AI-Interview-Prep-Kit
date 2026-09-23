@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectDB, FileDB } from '../../../../lib/db.js';
+import { connectDB, FileDB, getKitQuery } from '../../../../lib/db.js';
 import PrepKit from '../../../../models/PrepKit.js';
 
 export async function GET(req, { params }) {
@@ -9,7 +9,7 @@ export async function GET(req, { params }) {
 
     let kit = null;
     if (isMongo) {
-      kit = await PrepKit.findOne({ $or: [{ id: id }, { _id: id }] });
+      kit = await PrepKit.findOne(getKitQuery(id));
     } else {
       kit = FileDB.getKitById(id);
     }
@@ -57,7 +57,7 @@ export async function POST(req, { params }) {
     let kit = null;
 
     if (isMongo) {
-      kit = await PrepKit.findOne({ $or: [{ id: id }, { _id: id }] });
+      kit = await PrepKit.findOne(getKitQuery(id));
     } else {
       kit = FileDB.getKitById(id);
     }
@@ -91,8 +91,15 @@ export async function POST(req, { params }) {
     // Save
     if (isMongo) {
       await PrepKit.findOneAndUpdate(
-        { $or: [{ id: id }, { _id: id }] },
-        { practiceProgress: updatedKit.practiceProgress, updatedAt: new Date() }
+        getKitQuery(id),
+        {
+          $set: {
+            'practiceProgress.confidenceScores': updatedKit.practiceProgress.confidenceScores,
+            'practiceProgress.coveredCardIds': updatedKit.practiceProgress.coveredCardIds,
+            updatedAt: new Date()
+          }
+        },
+        { new: true }
       );
     } else {
       FileDB.saveKit(updatedKit);

@@ -23,7 +23,7 @@ async function withRetry(fn, maxRetries = 3) {
 }
 
 // ============================================================================
-// PROVIDER: GEMINI (gemini-2.5-flash — generous free tier)
+// PROVIDER: GEMINI (gemini-flash-latest with gemini-flash-lite-latest fallback)
 // ============================================================================
 async function callGeminiJSON(prompt, systemPrompt = '') {
   const geminiKey = process.env.GEMINI_API_KEY;
@@ -34,22 +34,42 @@ async function callGeminiJSON(prompt, systemPrompt = '') {
     : `${prompt}\n\nRespond with valid JSON only. No markdown, no code fences, no explanation.`;
 
   return withRetry(async () => {
-    console.log('[LLM] Calling Gemini 2.5 Flash (JSON)...');
-    const res = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-      {
-        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 4096,
-          responseMimeType: 'application/json'
-        }
-      },
-      { headers: { 'Content-Type': 'application/json' }, timeout: 25000 }
-    );
-    const raw = res.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-    return JSON.parse(cleaned);
+    console.log('[LLM] Calling Gemini Flash (JSON)...');
+    try {
+      const res = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey}`,
+        {
+          contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+          generationConfig: {
+            temperature: 0.4,
+            maxOutputTokens: 4096,
+            responseMimeType: 'application/json'
+          }
+        },
+        { headers: { 'Content-Type': 'application/json' }, timeout: 25000 }
+      );
+      const raw = res.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+      return JSON.parse(cleaned);
+    } catch (err) {
+      // Fallback to flash-lite if needed
+      console.warn('[LLM] Trying Gemini Flash Lite fallback...');
+      const res = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${geminiKey}`,
+        {
+          contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+          generationConfig: {
+            temperature: 0.4,
+            maxOutputTokens: 4096,
+            responseMimeType: 'application/json'
+          }
+        },
+        { headers: { 'Content-Type': 'application/json' }, timeout: 25000 }
+      );
+      const raw = res.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+      return JSON.parse(cleaned);
+    }
   }, 3);
 }
 
@@ -60,16 +80,29 @@ async function callGeminiText(prompt, systemPrompt = '') {
   const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
 
   return withRetry(async () => {
-    console.log('[LLM] Calling Gemini 2.5 Flash (text)...');
-    const res = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-      {
-        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-        generationConfig: { temperature: 0.6, maxOutputTokens: 1024 }
-      },
-      { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
-    );
-    return res.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+    console.log('[LLM] Calling Gemini Flash (text)...');
+    try {
+      const res = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey}`,
+        {
+          contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+          generationConfig: { temperature: 0.6, maxOutputTokens: 1024 }
+        },
+        { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
+      );
+      return res.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+    } catch (err) {
+      console.warn('[LLM] Trying Gemini Flash Lite text fallback...');
+      const res = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${geminiKey}`,
+        {
+          contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+          generationConfig: { temperature: 0.6, maxOutputTokens: 1024 }
+        },
+        { headers: { 'Content-Type': 'application/json' }, timeout: 20000 }
+      );
+      return res.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+    }
   }, 3);
 }
 

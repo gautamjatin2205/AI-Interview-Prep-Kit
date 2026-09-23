@@ -4,6 +4,8 @@ const nextConfig = {
   // (Next.js 14 uses `serverComponentsExternalPackages` not `serverExternalPackages`)
   experimental: {
     serverComponentsExternalPackages: ['mongoose', 'bcryptjs'],
+    workerThreads: false,
+    cpus: 1,
   },
 };
 
